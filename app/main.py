@@ -13,6 +13,9 @@ with ptg.WindowManager() as manager:
     def send_async(input_text):
         resposta = submit_prompt(input_text)
         chat_ui._add_widget(ptg.Label(f"[bold green]DvIntel:[/] {resposta}"))
+        chat_ui._add_widget(ptg.Label(""))
+
+        chat_ui.scroll_end(1)
 
 
     def send(button_or_widget, *args):
