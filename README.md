@@ -2,7 +2,7 @@
 Esse projeto tem como finalidade aprimorar conhecimentos no funcionamento de agentes de IA.
 
 ## Modelo
-O projeto utilizará a API do `groq` como motor principal usando o modelo `llama-3.1-8b-instant`, podendo ser alterado futuramente a depender do desempenho do modelo.
+O projeto utilizará a API do `groq` como motor principal usando o modelo `openai/gpt-oss-20b`, podendo ser alterado futuramente a depender do desempenho do modelo.
 
 ## Stack
 - Python
