@@ -11,13 +11,18 @@ class Memory:
         MEMORY_DIR.mkdir(exist_ok=True)
         if not MEMORY_FILE.exists():
             MEMORY_FILE.touch()
-        self.salvar("system", "You're an AI agent, you'll be able to change code and using tools.")
+            #self.salvar("system", "You're an AI agent, you'll be able to change code and using tools.")
+            self.salvar("system", "You're an AI chatbot, just testing")
 
-    def salvar(self, role, content):
+    def salvar(self, role, content, tool_call_id=None, name=None):
         entry = {
             "role":role,
             "content":content
             }
+        if role == "tool" and (tool_call_id is not None and name is not None):
+            entry["tool_call_id"] = tool_call_id
+            entry["name"] = name
+
         append_jsonl(MEMORY_FILE, entry)
              
 
