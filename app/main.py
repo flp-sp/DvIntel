@@ -43,7 +43,7 @@ with ptg.WindowManager() as manager:
             width=60,
             box="DOUBLE")
 
-        .set_title("[210 bold]DvIntel")
+        .set_title("[210 bold]MegaBrain")
         .center())
 
     manager.add(window)

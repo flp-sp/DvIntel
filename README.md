@@ -1,4 +1,4 @@
-# Agente de IA - DvIntel
+# Agente de IA - MegaBrain
 Esse projeto tem como finalidade aprimorar conhecimentos no funcionamento de agentes de IA.
 
 Embora tenham sido feitas alterações durante o desenvolvimento, o funcionamento do agente está explicado [aqui](docs/arquitetura.md).
