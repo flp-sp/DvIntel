@@ -29,7 +29,7 @@ class Memory:
     def compactar():
         pass
 
-    def get_context():
+    def get_context(self):
         data = []
         with open (MEMORY_FILE, "r", encoding="utf-8") as f:
             for line in f:
