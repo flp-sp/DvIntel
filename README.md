@@ -11,7 +11,7 @@ O projeto utilizará a API do `groq` como motor principal usando o modelo `opena
 
 ## Stack
 - Python
-- pytermGUI
+- textual 
 - groq
 
 ## NoAI
