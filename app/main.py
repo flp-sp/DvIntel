@@ -103,7 +103,7 @@ class MegaBrain(App):
 
     def add_bot(self, text: str) -> None:
         chat = self.query_one("#chat", VerticalScroll)
-        self.add_header(f"[bold green]DvIntel[/]  [dim]{stamp()}[/]")
+        self.add_header(f"[bold green]MegaBrain[/]  [dim]{stamp()}[/]")
         chat.mount(Markdown(text, classes="msg-bot"))  # respostas em Markdown
         chat.scroll_end(animate=False)
 
