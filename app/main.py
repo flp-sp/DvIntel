@@ -1,111 +1,154 @@
-import threading
 from datetime import datetime
 
-import pytermgui as ptg
+from textual import work
+from textual.app import App, ComposeResult
+from textual.containers import VerticalScroll
+from textual.widgets import Footer, Header, Input, Markdown, Static
+
 from agentic_loop import submit_prompt  # lógica do agente: inalterada
 
-# ---------- Tema ----------
-ACCENT = "210"
-USER_COLOR = "75"
-BOT_COLOR = "78"
-DIM = "245"
-ERR_COLOR = "203"
-
-# Larguras fixas e explícitas (nada fica com largura 0)
-WIDTH = 80
-CHAT_HEIGHT = 18
-
-busy = False  # evita enviar duas mensagens ao mesmo tempo
-
-
-def esc(text: str) -> str:
-    """Escapa '[' para o texto não ser lido como markup."""
-    return text.replace("\\", "\\\\").replace("[", "\\[")
-
-
-def L(text: str = " ") -> "ptg.Label":
-    """Label alinhado à esquerda."""
-    return ptg.Label(text, parent_align=ptg.HorizontalAlignment.LEFT)
+try:
+    from textual.markup import escape
+except ImportError:  # versões antigas do Textual
+    from rich.markup import escape
 
 
 def stamp() -> str:
     return datetime.now().strftime("%H:%M")
 
 
-with ptg.WindowManager() as manager:
-    # ---------- Widgets ----------
-    chat_ui = ptg.Container(
-        height=CHAT_HEIGHT,
-        overflow=ptg.Overflow.SCROLL,
-        box="EMPTY",
-        vertical_align=ptg.VerticalAlignment.TOP,
-    )
+class MegaBrain(App):
+    TITLE = "🧠 MegaBrain"
+    SUB_TITLE = "agente de IA"
 
-    status = L(f"[{DIM}]● Pronto")
+    BINDINGS = [
+        ("ctrl+l", "clear", "Limpar"),
+        ("ctrl+q", "quit", "Sair"),
+    ]
 
-    input_prompt = ptg.InputField("", prompt="> ", width=WIDTH - 8)
+    CSS = """
+    Screen {
+        layout: vertical;
+    }
+
+    #chat {
+        height: 1fr;
+        padding: 1 2;
+        border: round $primary;
+        margin: 0 1;
+        scrollbar-size-vertical: 1;
+    }
+
+    .msg-header {
+        margin-top: 1;
+        height: auto;
+    }
+
+    .msg-user {
+        height: auto;
+        padding-left: 2;
+    }
+
+    .msg-error {
+        height: auto;
+        padding-left: 2;
+        color: $error;
+    }
+
+    .msg-bot {
+        height: auto;
+        padding-left: 1;
+        margin: 0;
+        background: transparent;
+    }
+
+    #status {
+        height: 1;
+        margin: 0 2;
+        color: $text-muted;
+    }
+
+    #prompt {
+        margin: 0 1 1 1;
+        border: round $accent;
+    }
+    """
+
+    busy = False
+
+    # ---------- UI ----------
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield VerticalScroll(id="chat")
+        yield Static("● Pronto", id="status")
+        yield Input(placeholder="Digite sua mensagem e pressione Enter...", id="prompt")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.query_one("#prompt", Input).focus()
 
     # ---------- Helpers ----------
-    def add_message(author_markup: str, text: str):
-        chat_ui._add_widget(L(f"{author_markup} [{DIM}]{stamp()}[/]"))
-        chat_ui._add_widget(L(esc(text)))
-        chat_ui._add_widget(L(" "))
-        chat_ui.scroll_end(1)
+    def set_status(self, text: str) -> None:
+        self.query_one("#status", Static).update(text)
 
-    def set_status(text: str):
-        status.value = text
+    def add_header(self, markup: str) -> None:
+        chat = self.query_one("#chat", VerticalScroll)
+        chat.mount(Static(markup, classes="msg-header"))
+
+    def add_user(self, text: str) -> None:
+        chat = self.query_one("#chat", VerticalScroll)
+        self.add_header(f"[bold cyan]Você[/]  [dim]{stamp()}[/]")
+        chat.mount(Static(escape(text), classes="msg-user"))
+        chat.scroll_end(animate=False)
+
+    def add_bot(self, text: str) -> None:
+        chat = self.query_one("#chat", VerticalScroll)
+        self.add_header(f"[bold green]DvIntel[/]  [dim]{stamp()}[/]")
+        chat.mount(Markdown(text, classes="msg-bot"))  # respostas em Markdown
+        chat.scroll_end(animate=False)
+
+    def add_error(self, text: str) -> None:
+        chat = self.query_one("#chat", VerticalScroll)
+        self.add_header(f"[bold red]Erro[/]  [dim]{stamp()}[/]")
+        chat.mount(Static(escape(text), classes="msg-error"))
+        chat.scroll_end(animate=False)
 
     # ---------- Lógica (mesma de antes) ----------
-    def send_async(input_text):
-        global busy
+    @work(thread=True)
+    def send_async(self, input_text: str) -> None:
         try:
             resposta = submit_prompt(input_text)
-            add_message(f"[bold {BOT_COLOR}]MegaBrain:[/]", str(resposta))
-            set_status(f"[{DIM}]● Pronto")
-        except Exception as e:
-            add_message(f"[bold {ERR_COLOR}]Erro:[/]", str(e))
-            set_status(f"[{ERR_COLOR}]● Falha ao responder")
+            self.call_from_thread(self.add_bot, str(resposta))
+            self.call_from_thread(self.set_status, "● Pronto")
+        except Exception as e:  # não derruba a UI se o agente falhar
+            self.call_from_thread(self.add_error, str(e))
+            self.call_from_thread(self.set_status, "[red]● Falha ao responder[/]")
         finally:
-            busy = False
+            self.call_from_thread(self.finish)
 
-    def send(button_or_widget, *args):
-        global busy
-        input_text = input_prompt.value.strip()
-        if not input_text or busy:
+    def finish(self) -> None:
+        self.busy = False
+        prompt = self.query_one("#prompt", Input)
+        prompt.disabled = False
+        prompt.focus()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        input_text = event.value.strip()
+        if not input_text or self.busy:
             return
 
-        busy = True
-        add_message(f"[bold {USER_COLOR}]Você:[/]", input_text)
-        set_status(f"[{ACCENT}]● MegaBrain está pensando...")
+        self.busy = True
+        event.input.value = ""
+        event.input.disabled = True
 
-        input_prompt._lines = [""]
-        input_prompt._cursor = [0, 0]
-        input_prompt._style_and_break_lines()
+        self.add_user(input_text)
+        self.set_status("[yellow]● MegaBrain está pensando...[/]")
+        self.send_async(input_text)
 
-        threading.Thread(target=send_async, args=(input_text,), daemon=True).start()
+    def action_clear(self) -> None:
+        self.query_one("#chat", VerticalScroll).remove_children()
+        self.set_status("● Conversa limpa")
 
-    input_prompt.bind(ptg.keys.ENTER, send)
 
-    def quit_app(*_):
-        manager.stop()
-
-    # ---------- Layout ----------
-    window = (
-        ptg.Window(
-            L(f"[bold {ACCENT}]MegaBrain[/] [{DIM}]· agente de IA[/]"),
-            L(),
-            chat_ui,
-            L(),
-            input_prompt,
-            L(),
-            ptg.Button("Enviar", send),
-            ptg.Button("Sair", quit_app),
-            status,
-            width=WIDTH,
-            box="ROUNDED",
-        )
-        .set_title(f"[{ACCENT} bold] MegaBrain ")
-        .center()
-    )
-
-    manager.add(window)
+if __name__ == "__main__":
+    MegaBrain().run()
