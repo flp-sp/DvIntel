@@ -39,6 +39,7 @@ def submit_prompt(user_prompt=None):
         )
         return submit_prompt()
     else:
+        memory_controller.salvar("assistant", response.content)
         final_response = client.chat.completions.create(
             model="openai/gpt-oss-20b",
             messages=memory_controller.get_context()

@@ -11,8 +11,7 @@ class Memory:
         MEMORY_DIR.mkdir(exist_ok=True)
         if not MEMORY_FILE.exists():
             MEMORY_FILE.touch()
-            #self.salvar("system", "You're an AI agent, you'll be able to change code and using tools.")
-            self.salvar("system", "You're an AI chatbot, just testing")
+            self.salvar("system", "You're an AI agent, you'll be able to change code and using tools.")
 
     def salvar(self, role, content, tool_call_id=None, name=None):
         entry = {

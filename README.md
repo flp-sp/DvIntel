@@ -15,4 +15,4 @@ O projeto utilizará a API do `groq` como motor principal usando o modelo `opena
 - groq
 
 ## NoAI
-Foi decidido que esse projeto não utilizará código gerado por IA, ferramentas de IA como LLMs e agentes poderão ser usados para revisão e testes.
+Foi decidido que esse projeto não utilizará código gerado por IA para a criação da lógica, ferramentas de IA como LLMs e agentes poderão ser usados para revisão testes e criação da UI.
